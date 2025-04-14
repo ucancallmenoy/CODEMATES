@@ -1,0 +1,143 @@
+<div class="chat-room" *ngIf="selectedGroup">
+    <div class="chat-header">
+      <div class="group-info">
+        <div class="group-avatar">{{ selectedGroup.name[0] }}</div>
+        <div class="group-details">
+          <div class="group-name">{{ selectedGroup.name }}</div>
+          <div class="group-status">Active now</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="action-button" (click)="toggleInfo()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  
+    <div class="chat-messages" #scrollContainer>
+      <div class="date-separator" *ngIf="messages.length > 0">
+        <span>Today</span>
+      </div>
+      
+      <ng-container *ngFor="let msg of messages; let i = index">
+        <div class="message" [ngClass]="{'own-message': msg.senderName === 'You', 'other-message': msg.senderName !== 'You'}">
+          <div class="message-wrapper">
+            <div class="message-avatar" *ngIf="msg.senderName !== 'You'">
+              {{ msg.senderName[0] }}
+            </div>
+            <div class="message-content">
+              <div class="message-header" *ngIf="msg.senderName !== 'You'">
+                <span class="sender">{{ msg.senderName }}</span>
+                <span class="time">{{ msg.timestamp | date:'shortTime' }}</span>
+              </div>
+              <div class="bubble">
+                <p class="text">{{ msg.content }}</p>
+                <div class="message-time" *ngIf="msg.senderName === 'You'">
+                  {{ msg.timestamp | date:'shortTime' }}
+                  <span class="message-status">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+      
+      <div class="typing-indicator" *ngIf="isTyping">
+        <div class="typing-bubble">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+    </div>
+  
+    <div class="chat-input">
+      <button class="attachment-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21.44 11.05L12.25 20.24C11.1242 21.3658 9.59718 21.9983 8.005 21.9983C6.41282 21.9983 4.88584 21.3658 3.76 20.24C2.63416 19.1142 2.00166 17.5872 2.00166 15.995C2.00166 14.4028 2.63416 12.8758 3.76 11.75L12.33 3.18C13.0806 2.42976 14.0991 2.00014 15.165 2.00014C16.2309 2.00014 17.2494 2.42976 18 3.18C18.7502 3.93063 19.1799 4.94913 19.1799 5.015C19.1799 7.08087 18.7502 8.09937 18 8.85L9.41 17.44C9.03472 17.8153 8.52573 18.0252 8 18.0252C7.47427 18.0252 6.96528 17.8153 6.59 17.44C6.21472 17.0647 6.00484 16.5557 6.00484 16.03C6.00484 15.5043 6.21472 14.9953 6.59 14.62L15.07 6.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="emoji-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 9H9.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15 9H15.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <input 
+        type="text" 
+        placeholder="Type a message..." 
+        [(ngModel)]="messageText" 
+        (keydown.enter)="sendMessage()"
+        (input)="onInputChange()"
+      />
+      <button class="send-btn" [disabled]="!messageText.trim()" (click)="sendMessage()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  
+    <!-- Info Modal -->
+    <div class="info-modal-backdrop" *ngIf="showInfoPanel" (click)="toggleInfo()">
+      <div class="info-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Group Info</h3>
+          <button class="close-btn" (click)="toggleInfo()">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="group-avatar large">{{ selectedGroup.name[0] }}</div>
+          
+          <div class="group-detail">
+            <div class="detail-label">Group Name</div>
+            <div class="detail-value">{{ selectedGroup.name }}</div>
+          </div>
+          
+          <div class="group-detail">
+            <div class="detail-label">Created On</div>
+            <div class="detail-value">{{ selectedGroup.createdDate || 'Not available' }}</div>
+          </div>
+          
+          <div class="group-detail" *ngIf="groupMembers.length > 0">
+            <div class="detail-label">Members ({{ groupMembers.length }})</div>
+            <div class="member-list">
+              <div class="member" *ngFor="let member of groupMembers">
+                <div class="member-avatar">{{ member.name[0] }}</div>
+                <div class="member-info">
+                  <div class="member-name">{{ member.name }}</div>
+                  <div class="member-role">{{ member.role }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="group-detail" *ngIf="groupMembers.length === 0">
+            <div class="detail-label">Members</div>
+            <div class="detail-value">No members available</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Optional: Message when no group is selected -->
+  <div class="chat-room empty" *ngIf="!selectedGroup">
+    <div class="empty-state">
+      <svg class="empty-icon" width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 12H8.01M12 12H12.01M16 12H16.01M21 12C21 16.4183 16.9706 20 12 20C10.4607 20 9.01172 19.6565 7.74467 19.0511L3 20L4.39499 16.28C3.51156 15.0423 3 13.5743 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z" 
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h2>Select a Group to Start Chatting</h2>
+      <p class="no-group">Join or create a group from the sidebar to begin collaborating with your CodeMates.</p>
+    </div>
+  </div>

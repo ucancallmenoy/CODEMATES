@@ -1,0 +1,45 @@
+<div class="register-container">
+    <div class="register-card">
+      <div class="form-section">
+        <h2>Sign up</h2>
+  
+        <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
+          <div class="input-box">
+            <i class="fa fa-user"></i>
+            <input type="text" name="name" placeholder="Your Name" required [(ngModel)]="form.name" />
+          </div>
+  
+          <div class="input-box">
+            <i class="fa fa-envelope"></i>
+            <input type="email" name="email" placeholder="Your Email" required [(ngModel)]="form.email" />
+          </div>
+  
+          <div class="input-box">
+            <i class="fa fa-lock"></i>
+            <input type="password" name="password" placeholder="Password" required [(ngModel)]="form.password" />
+          </div>
+  
+          <div class="input-box">
+            <i class="fa fa-lock"></i>
+            <input type="password" name="confirmPassword" placeholder="Repeat your password" required />
+          </div>
+  
+          <div class="checkbox">
+            <input type="checkbox" required />
+            <label>I agree all statements in <a href="#">Terms of service</a></label>
+          </div>
+  
+          <button type="submit" class="register-btn">Register</button>
+        </form>
+  
+        <p class="login-link">
+          <a routerLink="/login">I am already member</a>
+        </p>
+      </div>
+  
+      <div class="image-section">
+        <img src="images/logo.png" alt="Desk illustration" />
+      </div>
+    </div>
+  </div>
+  
