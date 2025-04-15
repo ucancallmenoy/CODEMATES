@@ -1,88 +1,117 @@
 .register-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh; /* This is crucial */
-    width: 100%;
-    background: #f8f8f8;
-  }
-  
-  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  background: #f8f8f8;
+}
+
+.register-card {
+  display: flex;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.form-section {
+  padding: 40px;
+  flex: 1;
+}
+
+.form-section h2 {
+  font-size: 28px;
+  margin-bottom: 25px;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #d32f2f;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.input-box {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.input-box i {
+  position: absolute;
+  left: 10px;
+  top: 12px;
+  color: #999;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 12px 12px 12px 35px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.checkbox {
+  margin: 15px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.checkbox input {
+  margin-right: 5px;
+}
+
+.register-btn {
+  width: 100%;
+  background-color: #4285f4;
+  color: #fff;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.register-btn:hover {
+  background-color: #3071e7;
+}
+
+.register-btn:disabled {
+  background-color: #a9c1f1;
+  cursor: not-allowed;
+}
+
+.login-link {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.image-section {
+  background: #f9f9f9;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.image-section img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 768px) {
   .register-card {
-    display: flex;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    max-width: 900px;
-    width: 100%;
-    overflow: hidden;
-  }
-  
-  .form-section {
-    padding: 40px;
-    flex: 1;
-  }
-  
-  .form-section h2 {
-    font-size: 28px;
-    margin-bottom: 25px;
-  }
-  
-  .input-box {
-    position: relative;
-    margin-bottom: 20px;
-  }
-  
-  .input-box i {
-    position: absolute;
-    left: 10px;
-    top: 12px;
-    color: #999;
-  }
-  
-  .input-box input {
-    width: 100%;
-    padding: 12px 12px 12px 35px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-  }
-  
-  .checkbox {
-    margin: 15px 0;
-    font-size: 14px;
-  }
-  
-  .register-btn {
-    width: 100%;
-    background-color: #4285f4;
-    color: #fff;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 10px;
-  }
-  
-  .register-btn:hover {
-    background-color: #3071e7;
-  }
-  
-  .login-link {
-    margin-top: 15px;
-    text-align: center;
+    flex-direction: column;
+    max-width: 90%;
   }
   
   .image-section {
-    background: #f9f9f9;
-    padding: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
+    display: none;
   }
-  
-  .image-section img {
-    max-width: 100%;
-    height: auto;
-  }
-  
+}

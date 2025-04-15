@@ -32,12 +32,12 @@
             <div class="message-content">
               <div class="message-header" *ngIf="msg.senderName !== 'You'">
                 <span class="sender">{{ msg.senderName }}</span>
-                <span class="time">{{ msg.timestamp | date:'shortTime' }}</span>
+                <span class="time">{{ msg.timestamp | firebaseDate | date:'shortTime' }}</span>
               </div>
               <div class="bubble">
                 <p class="text">{{ msg.content }}</p>
                 <div class="message-time" *ngIf="msg.senderName === 'You'">
-                  {{ msg.timestamp | date:'shortTime' }}
+                  {{ msg.timestamp | firebaseDate | date:'shortTime' }}
                   <span class="message-status">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -86,6 +86,8 @@
         </svg>
       </button>
     </div>
+
+    
   
     <!-- Info Modal -->
     <div class="info-modal-backdrop" *ngIf="showInfoPanel" (click)="toggleInfo()">

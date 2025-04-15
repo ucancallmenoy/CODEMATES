@@ -9,6 +9,7 @@ import { ChatRoomComponent } from './pages/chat-room/chat-room.component';
 import { FormsModule } from '@angular/forms';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
+import { FirebaseDatePipe } from './components/pipe/custom-pipe';
 
 @NgModule({
   declarations: [
@@ -18,11 +19,15 @@ import { RegisterComponent } from './pages/register/register.component';
     ChatRoomComponent,
     LoginComponent,
     RegisterComponent,
+    FirebaseDatePipe
   ],
   imports: [
     CommonModule,
     PublicRoutingModule,
     FormsModule
+  ],
+  exports: [
+    FirebaseDatePipe
   ]
 })
 export class PublicModule { }

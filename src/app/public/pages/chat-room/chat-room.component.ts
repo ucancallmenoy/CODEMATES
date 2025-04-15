@@ -1,41 +1,65 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
-import { GroupService } from '../../../services/group.service';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy } from '@angular/core';
+import { GroupService, Message } from '../../../services/group.service';
+import { AuthService } from '../../../services/auth.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-chat-room',
   templateUrl: './chat-room.component.html',
   styleUrls: ['./chat-room.component.css']
 })
-export class ChatRoomComponent implements OnInit, AfterViewChecked {
+export class ChatRoomComponent implements OnInit, AfterViewChecked, OnDestroy {
   messageText = '';
-  messages: { senderName: string; content: string; timestamp?: Date }[] = [];
+  messages: Message[] = [];
   showInfoPanel = false;
   isTyping = false;
   typingTimeout: any;
+  sending = false;
 
-  selectedGroup: { name: string; lastMessage: string; createdDate?: Date } | null = null;
-  groupMembers: { name: string; role: string }[] = [];
+  selectedGroup: any = null;
+  groupMembers: any[] = [];
+
+  private subscriptions: Subscription[] = [];
 
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
-  constructor(private groupService: GroupService) {}
+  constructor(
+    private groupService: GroupService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
-    this.groupService.selectedGroup$.subscribe(group => {
-      this.selectedGroup = group;
-      if (group) {
-        // Load actual messages here instead of dummy data
-        this.messages = [];
-        // Load actual group members here
-        this.groupMembers = [];
-      } else {
-        this.messages = [];
-      }
-    });
+    // Subscribe to selected group changes
+    this.subscriptions.push(
+      this.groupService.selectedGroup$.subscribe(group => {
+        this.selectedGroup = group;
+      })
+    );
+
+    // Subscribe to messages
+    this.subscriptions.push(
+      this.groupService.messages$.subscribe(messages => {
+        this.messages = messages;
+      })
+    );
+
+    // Subscribe to group members
+    this.subscriptions.push(
+      this.groupService.members$.subscribe(members => {
+        this.groupMembers = members;
+      })
+    );
   }
 
   ngAfterViewChecked() {
     this.scrollToBottom();
+  }
+
+  
+
+  ngOnDestroy() {
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   scrollToBottom(): void {
@@ -44,35 +68,57 @@ export class ChatRoomComponent implements OnInit, AfterViewChecked {
     } catch(err) { }
   }
 
-  sendMessage() {
-    if (!this.messageText.trim()) return;
+  private verifyAuthentication(): boolean {
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      return false;
+    }
+    return true;
+  }
 
-    this.messages.push({
-      senderName: 'You',
-      content: this.messageText,
-      timestamp: new Date()
-    });
-
-    this.messageText = '';
-    
-    // Replace with actual message sending logic
-    // The code for simulating responses has been removed
+  async sendMessage() {
+    if (!this.messageText.trim() || this.sending) return;
+    if (!this.verifyAuthentication()) return;
+  
+    this.sending = true;
+  
+    try {
+      // Check if we're logged in and have a selected group
+      const currentUser = this.authService.getCurrentUser();
+      if (!currentUser) {
+        console.error('Not logged in');
+        // Redirect to login if needed
+        return;
+      }
+      
+      if (!this.selectedGroup) {
+        console.error('No group selected');
+        return;
+      }
+      
+      const success = await this.groupService.sendMessage(this.messageText.trim());
+      if (success) {
+        this.messageText = '';
+      } else {
+        console.error('Failed to send message');
+        // Display an error to the user
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Add user-friendly error handling
+      // e.g., this.errorMessage = 'Failed to send message. Please try again.';
+    } finally {
+      this.sending = false;
+    }
   }
 
   toggleInfo() {
     this.showInfoPanel = !this.showInfoPanel;
   }
 
-  getMessageTime(): string {
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  showTypingIndicator() {
-    this.isTyping = true;
-  }
-
-  hideTypingIndicator() {
-    this.isTyping = false;
+  isCurrentUser(senderId: string): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    return currentUser?.uid === senderId;
   }
 
   onInputChange() {
@@ -81,6 +127,7 @@ export class ChatRoomComponent implements OnInit, AfterViewChecked {
       clearTimeout(this.typingTimeout);
     }
     
-    // Add typing indicator logic here if needed
+    // You could implement a "user is typing" feature here
+    // using Firebase Realtime Database or Firestore
   }
 }

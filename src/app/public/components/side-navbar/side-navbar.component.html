@@ -4,13 +4,13 @@
   </div>
   
   <div class="action-buttons">
-    <button class="action-btn create-btn">
+    <button class="action-btn create-btn" (click)="openCreateModal()">
       <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <span>Create Group</span>
     </button>
-    <button class="action-btn join-btn">
+    <button class="action-btn join-btn" (click)="openJoinModal()">
       <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M11 16L15 12M15 12L11 8M15 12H3M21 12V7C21 5.89543 20.1046 5 19 5H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -22,13 +22,79 @@
     <h3>My Groups</h3>
   </div>
 
-  <div class="group-list">
-    <div class="group" *ngFor="let group of staticGroups" (click)="selectGroup(group)">
-      <div class="group-avatar">🧑‍💻</div>
+  <div class="group-list" *ngIf="!loading; else loadingGroups">
+    <div class="group" *ngFor="let group of groups" (click)="selectGroup(group)">
+      <div class="group-avatar">{{ group.name.charAt(0) }}</div>
       <div class="group-info">
         <p class="group-name">{{ group.name }}</p>
         <p class="last-message">{{ group.lastMessage }}</p>
       </div>
     </div>
-  </div>    
+    <div *ngIf="groups.length === 0" class="no-groups">
+      No groups yet. Create or join a group to start chatting.
+    </div>
+  </div>
+  
+  <ng-template #loadingGroups>
+    <div class="loading-groups">
+      Loading groups...
+    </div>
+  </ng-template>
+  
+  <div class="user-controls">
+    <button class="logout-btn" (click)="signOut()">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Sign Out</span>
+    </button>
+  </div>
+  
+  <!-- Create Group Modal -->
+  <div class="modal-backdrop" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create a New Group</h3>
+        <button class="close-btn" (click)="closeCreateModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Group Name</label>
+          <input type="text" [(ngModel)]="newGroupName" placeholder="Enter group name" />
+        </div>
+        <div class="error-message" *ngIf="error">{{ error }}</div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" (click)="closeCreateModal()">Cancel</button>
+        <button class="create-btn" [disabled]="loading" (click)="createGroup()">
+          <span *ngIf="!loading">Create</span>
+          <span *ngIf="loading">Creating...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Join Group Modal -->
+  <div class="modal-backdrop" *ngIf="showJoinModal" (click)="closeJoinModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Join a Group</h3>
+        <button class="close-btn" (click)="closeJoinModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Group Code</label>
+          <input type="text" [(ngModel)]="joinCode" placeholder="Enter 6-digit code" />
+        </div>
+        <div class="error-message" *ngIf="error">{{ error }}</div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" (click)="closeJoinModal()">Cancel</button>
+        <button class="join-btn" [disabled]="loading" (click)="joinGroup()">
+          <span *ngIf="!loading">Join</span>
+          <span *ngIf="loading">Joining...</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </aside>

@@ -4,13 +4,21 @@ import { PublicComponent } from './public.component';
 import { HomeComponent } from './pages/home/home.component';
 import { ChatRoomComponent } from './pages/chat-room/chat-room.component';
 import { LoginComponent } from './pages/login/login.component';
+import { RegisterComponent } from './pages/register/register.component';
+import { AuthGuard } from '../guards/auth.guard';
 
 const routes: Routes = [
-  {path: '', component: PublicComponent, children: [
-    {path: '', component: HomeComponent},
-    {path: 'chat-room', component: ChatRoomComponent},
-  ]},
+  {
+    path: '', 
+    component: PublicComponent, 
+    canActivate: [AuthGuard],
+    children: [
+      {path: '', component: HomeComponent},
+      {path: 'chat-room', component: ChatRoomComponent},
+    ]
+  },
   {path: 'login', component: LoginComponent},
+  {path: 'register', component: RegisterComponent},
 ];
 
 @NgModule({
