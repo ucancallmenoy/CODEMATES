@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -48,5 +49,10 @@ export class FirebaseService {
     }, (error) => {
       console.error('Auth state change error:', error);
     });
+  }
+
+  async getDocument(collection: string, docId: string) {
+    const docRef = doc(this.db, collection, docId);
+    return await getDoc(docRef);
   }
 }

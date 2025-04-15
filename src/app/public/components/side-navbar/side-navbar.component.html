@@ -1,58 +1,85 @@
-<aside class="sidenav">
-  <div class="logo">
-    <h2>CodeMates</h2>
+<aside class="sidenav" [class.collapsed]="isCollapsed">
+  <div class="sidenav-header">
+    <div class="logo">
+      <img src="images/logo.png" alt="CodeMates" class="logo-icon" *ngIf="isCollapsed">
+      <h2 *ngIf="!isCollapsed">CodeMates</h2>
+    </div>
+    <button class="collapse-btn" (click)="toggleCollapse()" [attr.aria-label]="isCollapsed ? 'Expand' : 'Collapse'">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path [attr.d]="isCollapsed ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
   
   <div class="action-buttons">
-    <button class="action-btn create-btn" (click)="openCreateModal()">
+    <button class="action-btn create-btn" (click)="openCreateModal()" [title]="isCollapsed ? 'Create Group' : ''">
       <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span>Create Group</span>
+      <span *ngIf="!isCollapsed">Create Group</span>
     </button>
-    <button class="action-btn join-btn" (click)="openJoinModal()">
+    <button class="action-btn join-btn" (click)="openJoinModal()" [title]="isCollapsed ? 'Join Group' : ''">
       <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M11 16L15 12M15 12L11 8M15 12H3M21 12V7C21 5.89543 20.1046 5 19 5H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span>Join Group</span>
+      <span *ngIf="!isCollapsed">Join Group</span>
     </button>
   </div>
 
   <div class="groups-header">
-    <h3>My Groups</h3>
+    <h3 *ngIf="!isCollapsed">My Groups</h3>
+    <span class="groups-count" *ngIf="groups.length > 0">{{groups.length}}</span>
   </div>
 
   <div class="group-list" *ngIf="!loading; else loadingGroups">
-    <div class="group" *ngFor="let group of groups" (click)="selectGroup(group)">
-      <div class="group-avatar">{{ group.name.charAt(0) }}</div>
-      <div class="group-info">
+    <div class="group" *ngFor="let group of groups" 
+         (click)="selectGroup(group)" 
+         [class.active]="isGroupSelected(group)">
+      <div class="group-avatar" [style.background-color]="getGroupColor(group.name)">
+        {{ group.name.charAt(0) }}
+      </div>
+      <div class="group-info" *ngIf="!isCollapsed">
         <p class="group-name">{{ group.name }}</p>
-        <p class="last-message">{{ group.lastMessage }}</p>
+        <p class="last-message">{{ group.lastMessage || 'No messages yet' }}</p>
       </div>
     </div>
     <div *ngIf="groups.length === 0" class="no-groups">
-      No groups yet. Create or join a group to start chatting.
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p *ngIf="!isCollapsed">No groups yet. Create or join a group to start chatting.</p>
     </div>
   </div>
   
   <ng-template #loadingGroups>
     <div class="loading-groups">
-      Loading groups...
+      <div class="spinner"></div>
+      <p *ngIf="!isCollapsed">Loading groups...</p>
     </div>
   </ng-template>
   
-  <div class="user-controls">
-    <button class="logout-btn" (click)="signOut()">
+  <div class="user-info" *ngIf="currentUser">
+    <div class="user-avatar">
+      {{ (currentUser.displayName || currentUser.email || '?').charAt(0) }}
+    </div>
+    <div class="user-details" *ngIf="!isCollapsed">
+      <p class="user-name">{{ currentUser.displayName || 'User' }}</p>
+      <p class="user-email">{{ currentUser.email }}</p>
+    </div>
+    <button class="logout-btn" (click)="signOut()" [title]="isCollapsed ? 'Sign Out' : ''">
       <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span>Sign Out</span>
+      <span *ngIf="!isCollapsed">Sign Out</span>
     </button>
   </div>
   
   <!-- Create Group Modal -->
-  <div class="modal-backdrop" *ngIf="showCreateModal" (click)="closeCreateModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
+  <div class="modal-backdrop" *ngIf="showCreateModal" (click)="closeCreateModal()" [@fadeAnimation]>
+    <div class="modal" (click)="$event.stopPropagation()" [@slideAnimation]>
       <div class="modal-header">
         <h3>Create a New Group</h3>
         <button class="close-btn" (click)="closeCreateModal()">&times;</button>
@@ -60,23 +87,29 @@
       <div class="modal-body">
         <div class="form-group">
           <label>Group Name</label>
-          <input type="text" [(ngModel)]="newGroupName" placeholder="Enter group name" />
+          <input type="text" [(ngModel)]="newGroupName" placeholder="Enter group name" maxlength="30" />
+          <small class="char-count" [ngClass]="{'warning': newGroupName.length > 20}">
+            {{newGroupName.length}}/30
+          </small>
         </div>
         <div class="error-message" *ngIf="error">{{ error }}</div>
       </div>
       <div class="modal-footer">
         <button class="cancel-btn" (click)="closeCreateModal()">Cancel</button>
-        <button class="create-btn" [disabled]="loading" (click)="createGroup()">
+        <button class="create-btn" [disabled]="loading || !newGroupName.trim()" (click)="createGroup()">
           <span *ngIf="!loading">Create</span>
-          <span *ngIf="loading">Creating...</span>
+          <span *ngIf="loading">
+            <div class="spinner-sm"></div>
+            Creating...
+          </span>
         </button>
       </div>
     </div>
   </div>
   
   <!-- Join Group Modal -->
-  <div class="modal-backdrop" *ngIf="showJoinModal" (click)="closeJoinModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
+  <div class="modal-backdrop" *ngIf="showJoinModal" (click)="closeJoinModal()" [@fadeAnimation]>
+    <div class="modal" (click)="$event.stopPropagation()" [@slideAnimation]>
       <div class="modal-header">
         <h3>Join a Group</h3>
         <button class="close-btn" (click)="closeJoinModal()">&times;</button>
@@ -84,15 +117,18 @@
       <div class="modal-body">
         <div class="form-group">
           <label>Group Code</label>
-          <input type="text" [(ngModel)]="joinCode" placeholder="Enter 6-digit code" />
+          <input type="text" [(ngModel)]="joinCode" placeholder="Enter 6-digit code" maxlength="6" />
         </div>
         <div class="error-message" *ngIf="error">{{ error }}</div>
       </div>
       <div class="modal-footer">
         <button class="cancel-btn" (click)="closeJoinModal()">Cancel</button>
-        <button class="join-btn" [disabled]="loading" (click)="joinGroup()">
+        <button class="join-btn" [disabled]="loading || joinCode.length !== 6" (click)="joinGroup()">
           <span *ngIf="!loading">Join</span>
-          <span *ngIf="loading">Joining...</span>
+          <span *ngIf="loading">
+            <div class="spinner-sm"></div>
+            Joining...
+          </span>
         </button>
       </div>
     </div>

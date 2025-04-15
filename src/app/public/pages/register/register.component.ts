@@ -64,4 +64,23 @@ export class RegisterComponent {
     
     return true;
   }
+  
+  async registerWithGoogle(): Promise<void> {
+    this.loading = true;
+    this.error = null;
+  
+    try {
+      const success = await this.authService.signInWithGoogle();
+      if (success) {
+        // Navigate to chat room
+        this.router.navigate(['/chat-room']);
+      } else {
+        this.error = 'Failed to sign up with Google. Please try again.';
+      }
+    } catch (err: any) {
+      this.error = err.message || 'Failed to sign up with Google';
+    } finally {
+      this.loading = false;
+    }
+  }
 }

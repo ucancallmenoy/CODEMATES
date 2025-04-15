@@ -7,6 +7,12 @@ import {
 } from 'firebase/firestore';
 import { AuthService } from './auth.service';
 
+export interface JoinGroupResult {
+  success: boolean;
+  groupId?: string;
+  message?: string;
+}
+
 export interface Group {
   id?: string;
   name: string;
@@ -98,9 +104,9 @@ export class GroupService {
   }
 
   // Join a group using a code
-  async joinGroup(code: string): Promise<boolean> {
+  async joinGroup(code: string): Promise<JoinGroupResult> {
     const user = this.authService.getCurrentUser();
-    if (!user) return false;
+    if (!user) return { success: false, message: 'Not authenticated' };
     
     try {
       const q = query(
@@ -110,27 +116,28 @@ export class GroupService {
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
-        return false; // No group found with that code
+        return { success: false, message: 'No group found with that code' };
       }
       
       const groupDoc = querySnapshot.docs[0];
       const groupData = groupDoc.data() as Group;
+      const groupId = groupDoc.id;
       
       // Check if user is already a member
       if (groupData.members?.includes(user.uid)) {
-        return true; // Already a member
+        return { success: true, groupId, message: 'Already a member' };
       }
       
       // Add user to members
-      await updateDoc(doc(this.firebaseService.db, 'groups', groupDoc.id), {
+      await updateDoc(doc(this.firebaseService.db, 'groups', groupId), {
         members: arrayUnion(user.uid),
         lastMessage: `${user.displayName || 'A user'} joined the group`
       });
       
-      return true;
+      return { success: true, groupId, message: 'Successfully joined group' };
     } catch (error) {
       console.error('Error joining group:', error);
-      return false;
+      return { success: false, message: error instanceof Error ? error.message : 'Unknown error occurred' };
     }
   }
 
@@ -220,17 +227,93 @@ export class GroupService {
         const data = snapshot.data() as Group;
         const memberIds = data.members || [];
         
-        // Get member details
-        const members = await Promise.all(
-          memberIds.map(async (uid) => {
-            // In a real app, you would get user details from a users collection
-            // For now, we'll just return the ID
-            return { id: uid, name: uid };
-          })
-        );
+        console.log(`Loading ${memberIds.length} members for group ${groupId}`);
         
+        // In this version, we'll use a cache of user data plus the current user info
+        const currentUser = this.authService.getCurrentUser();
+        
+        // Create a map of member information
+        const memberMap: {[key: string]: any} = {};
+        
+        // Add the current user to the map if they're in the group
+        if (currentUser && memberIds.includes(currentUser.uid)) {
+          memberMap[currentUser.uid] = {
+            id: currentUser.uid,
+            name: currentUser.displayName || currentUser.email?.split('@')[0] || 'You',
+            email: currentUser.email || '',
+            lastActive: new Date()
+          };
+        }
+        
+        // For other members, use basic info
+        const members = memberIds.map(uid => {
+          // If we have this user in our map, use that data
+          if (memberMap[uid]) {
+            return memberMap[uid];
+          }
+          
+          // Otherwise use a simple object with the ID
+          // and a generic display name
+          return {
+            id: uid,
+            name: uid === data.createdBy ? 'Group Admin' : 'Group Member',
+            email: ''
+          };
+        });
+        
+        console.log('Member list:', members);
         this.membersSource.next(members);
       }
     });
   }
+
+  
+
+  // Leave a group
+async leaveGroup(groupId: string): Promise<boolean> {
+  const user = this.authService.getCurrentUser();
+  if (!user) {
+    console.error('Cannot leave group: User not authenticated');
+    return false;
+  }
+  
+  try {
+    const groupRef = doc(this.firebaseService.db, 'groups', groupId);
+    const groupSnap = await getDocs(query(
+      collection(this.firebaseService.db, 'groups'),
+      where('__name__', '==', groupId)
+    ));
+    
+    if (groupSnap.empty) {
+      console.error('Group not found');
+      return false;
+    }
+    
+    // Get current members array
+    const groupData = groupSnap.docs[0].data() as Group;
+    const currentMembers = groupData.members || [];
+    
+    // Remove the current user
+    const updatedMembers = currentMembers.filter(id => id !== user.uid);
+    
+    // Update the group document
+    await updateDoc(groupRef, {
+      members: updatedMembers,
+      lastMessage: `${user.displayName || 'A user'} left the group`
+    });
+    
+    // If this was the selected group, unselect it
+    const currentSelectedGroup = this.selectedGroupSource.getValue();
+    if (currentSelectedGroup?.id === groupId) {
+      this.selectGroup(null as unknown as Group); // Deselect the current group
+    }
+    
+    console.log('Successfully left group:', groupId);
+    return true;
+  } catch (error) {
+    console.error('Error leaving group:', error);
+    return false;
+  }
+}
+
 }

@@ -7,6 +7,10 @@ import {
   updateProfile, signOut, User, onAuthStateChanged
 } from 'firebase/auth';
 import { FirebaseService } from './firebase.service';
+import {
+  doc, getDoc, setDoc, serverTimestamp
+} from 'firebase/firestore';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -81,6 +85,10 @@ export class AuthService {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(this.firebase.auth, provider);
+      
+      // Create/update user document in Firestore after Google sign-in
+      await this.createUserDocument(result.user);
+      
       console.log('Google sign in successful');
       return true;
     } catch (error) {
@@ -100,6 +108,10 @@ export class AuthService {
       
       // Update profile with the name
       await updateProfile(userCredential.user, { displayName: name });
+      
+      // Important: Create user document in Firestore
+      await this.createUserDocument(userCredential.user, { displayName: name });
+      
       console.log('Registration successful');
       return true;
     } catch (error) {
@@ -116,6 +128,12 @@ export class AuthService {
         email,
         password
       );
+      
+      // Update the user document on sign-in
+      if (result.user) {
+        await this.updateLastActive(result.user.uid);
+      }
+      
       console.log('Sign in successful');
       return true;
     } catch (error) {
@@ -135,6 +153,128 @@ export class AuthService {
       this.router.navigate(['/login']);
     } catch (error) {
       console.error('Error during sign out:', error);
+    }
+  }
+  async getUserInfo(uid: string): Promise<any> {
+    try {
+      // First try to get from Firestore
+      const userDocRef = doc(this.firebase.db, 'users', uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        return userDoc.data();
+      }
+      
+      // For the current user only, we can get info from auth
+      const currentUser = this.firebase.auth.currentUser;
+      if (currentUser && currentUser.uid === uid) {
+        return {
+          displayName: currentUser.displayName,
+          email: currentUser.email,
+          photoURL: currentUser.photoURL
+        };
+      }
+      
+      console.warn('Could not find user info for:', uid);
+      return null;
+    } catch (error) {
+      console.error('Error getting user info:', error);
+      return null;
+    }
+  }
+
+  private async createUserDocument(user: User, additionalData: any = {}): Promise<void> {
+    if (!user) return;
+    
+    try {
+      // This will create the users collection if it doesn't exist
+      const userRef = doc(this.firebase.db, 'users', user.uid);
+      
+      // Data to store in the user document
+      const userData = {
+        displayName: user.displayName || additionalData.displayName || 'Anonymous User',
+        email: user.email || '',
+        photoURL: user.photoURL || null,
+        createdAt: serverTimestamp(),
+        lastActive: serverTimestamp(),
+        ...additionalData
+      };
+      
+      console.log('Creating user document:', userData);
+      
+      // Create or update the document
+      await setDoc(userRef, userData, { merge: true });
+      console.log('User document created/updated in Firestore');
+      
+      // Verify the document was created
+      const checkDoc = await getDoc(userRef);
+      console.log('Document exists after creation:', checkDoc.exists());
+    } catch (error) {
+      console.error('Error creating user document:', error);
+    }
+  }
+
+  async ensureUserDocument(): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) return;
+    
+    console.log('Ensuring user document exists for:', user.email);
+    
+    try {
+      // Create/update the user document
+      await this.createUserDocument(user);
+      
+      // Verify it was created
+      const userRef = doc(this.firebase.db, 'users', user.uid);
+      const docSnap = await getDoc(userRef);
+      
+      if (docSnap.exists()) {
+        console.log('User document verified:', docSnap.data());
+      } else {
+        console.error('Failed to create user document!');
+      }
+    } catch (error) {
+      console.error('Error ensuring user document:', error);
+    }
+  }
+
+  async updateLastActive(userId: string): Promise<void> {
+    if (!userId) return;
+    
+    try {
+      const userRef = doc(this.firebase.db, 'users', userId);
+      await setDoc(userRef, { 
+        lastActive: serverTimestamp() 
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error updating lastActive:', error);
+    }
+  }
+  async updateUserProfile(displayName: string, photoURL?: string): Promise<boolean> {
+    try {
+      const user = this.firebase.auth.currentUser;
+      if (!user) {
+        console.error('Cannot update profile: No authenticated user');
+        return false;
+      }
+      
+      // Update the auth profile
+      await updateProfile(user, {
+        displayName: displayName,
+        photoURL: photoURL || user.photoURL
+      });
+      
+      // Update the Firestore document
+      await this.createUserDocument(user, { 
+        displayName: displayName,
+        photoURL: photoURL || user.photoURL
+      });
+      
+      console.log('Profile updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return false;
     }
   }
 }

@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { FirebaseDatePipe } from './components/pipe/custom-pipe';
-
+import { TimeAgoPipe } from './components/pipe/time-ago';
 @NgModule({
   declarations: [
     PublicComponent,
@@ -19,7 +19,8 @@ import { FirebaseDatePipe } from './components/pipe/custom-pipe';
     ChatRoomComponent,
     LoginComponent,
     RegisterComponent,
-    FirebaseDatePipe
+    FirebaseDatePipe,
+    TimeAgoPipe
   ],
   imports: [
     CommonModule,
