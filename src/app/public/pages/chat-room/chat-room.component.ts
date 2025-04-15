@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy }
 import { GroupService, Message } from '../../../services/group.service';
 import { AuthService } from '../../../services/auth.service';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-chat-room',
@@ -15,6 +16,7 @@ export class ChatRoomComponent implements OnInit, AfterViewChecked, OnDestroy {
   isTyping = false;
   typingTimeout: any;
   sending = false;
+  errorMessage: string | null = null;
 
   selectedGroup: any = null;
   groupMembers: any[] = [];
@@ -25,10 +27,28 @@ export class ChatRoomComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   constructor(
     private groupService: GroupService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit() {
+    console.log('ChatRoom initialized, checking auth');
+  const user = this.authService.getCurrentUser();
+  console.log('Current user from auth service:', user ? user.email : 'No user');
+  
+  if (!user) {
+    console.log('No user found, navigating to login');
+    this.router.navigate(['/login']);
+    return;
+  }
+  
+  console.log('User authenticated, continuing with initialization');
+    // Check if user is logged in
+    if (!this.authService.getCurrentUser()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
     // Subscribe to selected group changes
     this.subscriptions.push(
       this.groupService.selectedGroup$.subscribe(group => {
@@ -36,17 +56,29 @@ export class ChatRoomComponent implements OnInit, AfterViewChecked, OnDestroy {
       })
     );
 
-    // Subscribe to messages
+    // Subscribe to messages with error handling
     this.subscriptions.push(
-      this.groupService.messages$.subscribe(messages => {
-        this.messages = messages;
+      this.groupService.messages$.subscribe({
+        next: messages => {
+          this.messages = messages;
+          this.errorMessage = null;
+        },
+        error: err => {
+          console.error('Error getting messages:', err);
+          this.errorMessage = 'Failed to load messages. Please try again.';
+        }
       })
     );
 
     // Subscribe to group members
     this.subscriptions.push(
-      this.groupService.members$.subscribe(members => {
-        this.groupMembers = members;
+      this.groupService.members$.subscribe({
+        next: members => {
+          this.groupMembers = members;
+        },
+        error: err => {
+          console.error('Error getting members:', err);
+        }
       })
     );
   }

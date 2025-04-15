@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
+import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +16,37 @@ export class FirebaseService {
     appId: "1:391761043416:web:b8809278849543a3899cad"
   };
 
-  app = initializeApp(this.firebaseConfig);
-  db = getFirestore(this.app);
-  auth = getAuth(this.app);
+  private _app = initializeApp(this.firebaseConfig);
+  private _auth = getAuth(this._app);
+  private _db = getFirestore(this._app);
+
+  get app() {
+    return this._app;
+  }
+
+  get auth() {
+    return this._auth;
+  }
+
+  get db() {
+    return this._db;
+  }
+
+  constructor() {
+    console.log('Firebase initializer service created');
+    
+    // Force persistence mode to LOCAL
+    setPersistence(this._auth, browserLocalPersistence).then(() => {
+      console.log('Firebase persistence set to LOCAL');
+    }).catch(error => {
+      console.error('Error setting persistence:', error);
+    });
+    
+    // Add a listener to log auth state changes
+    onAuthStateChanged(this._auth, (user) => {
+      console.log(`Auth state changed in initializer: ${user ? user.email : 'No user'}`);
+    }, (error) => {
+      console.error('Auth state change error:', error);
+    });
+  }
 }

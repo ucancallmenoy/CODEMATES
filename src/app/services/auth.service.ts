@@ -1,51 +1,87 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, signInWithPopup, GoogleAuthProvider,
+import { BehaviorSubject } from 'rxjs';
+import {
+  GoogleAuthProvider, signInWithPopup,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  updateProfile, signOut, User
+  updateProfile, signOut, User, onAuthStateChanged
 } from 'firebase/auth';
-
+import { FirebaseService } from './firebase.service';
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private firebaseConfig = {
-    apiKey: "AIzaSyDSuB6Kx5ivi18_Jpr76zOQZxYkrSgrQ9c",
-  authDomain: "codemates-e8bdb.firebaseapp.com",
-  projectId: "codemates-e8bdb",
-  storageBucket: "codemates-e8bdb.firebasestorage.app",
-  messagingSenderId: "391761043416",
-  appId: "1:391761043416:web:b8809278849543a3899cad",
-  };
-
-  private app = initializeApp(this.firebaseConfig);
-  private auth = getAuth(this.app);
-  
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
-
-  constructor(private router: Router) {
+  
+  constructor(
+    private firebase: FirebaseService,
+    private router: Router
+  ) {
+    console.log('Auth service constructor');
+    
     // Listen to authentication state changes
-    this.auth.onAuthStateChanged(user => {
-      console.log('Auth state changed:', user);
+    onAuthStateChanged(this.firebase.auth, (user) => {
+      console.log('Auth state changed in service:', user ? user.email : 'No user');
       this.currentUserSubject.next(user);
+      
+      // Store user info in localStorage as backup
+      if (user) {
+        localStorage.setItem('user_email', user.email || '');
+        localStorage.setItem('user_displayName', user.displayName || '');
+        localStorage.setItem('user_uid', user.uid);
+      } else {
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_displayName');
+        localStorage.removeItem('user_uid');
+      }
     });
+    
+    // Check local storage for backup authentication info
+    this.checkStoredAuthData();
   }
-
+  
   // Get the current user
   getCurrentUser(): User | null {
-    return this.auth.currentUser;
+    const user = this.firebase.auth.currentUser;
+    if (user) {
+      return user;
+    }
+    
+    // If no user in Firebase, check localStorage as backup
+    const uid = localStorage.getItem('user_uid');
+    if (uid) {
+      console.warn('User found in localStorage but not in Firebase auth state');
+      // Force refresh auth state
+      this.refreshAuthState();
+    }
+    
+    return null;
+  }
+  
+  // Check localStorage for user data as a backup
+  private checkStoredAuthData() {
+    const uid = localStorage.getItem('user_uid');
+    if (uid && !this.firebase.auth.currentUser) {
+      console.log('Found user data in localStorage but not in Firebase');
+      // Don't create fake user object, just log the discrepancy
+    }
+  }
+  
+  // Manually refresh the auth state (useful after a page reload)
+  refreshAuthState() {
+    const user = this.firebase.auth.currentUser;
+    console.log('Manual refresh auth state:', user ? user.email : 'No user');
+    this.currentUserSubject.next(user);
+    return !!user;
   }
 
   // Sign in with Google
   async signInWithGoogle(): Promise<boolean> {
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(this.auth, provider);
-      console.log('Google sign in successful:', result.user);
+      const result = await signInWithPopup(this.firebase.auth, provider);
+      console.log('Google sign in successful');
       return true;
     } catch (error) {
       console.error('Error during Google sign in:', error);
@@ -56,19 +92,15 @@ export class AuthService {
   // Register with email and password
   async register(name: string, email: string, password: string): Promise<boolean> {
     try {
-      console.log('Registering user:', email);
       const userCredential = await createUserWithEmailAndPassword(
-        this.auth,
+        this.firebase.auth,
         email,
         password
       );
       
       // Update profile with the name
-      await updateProfile(userCredential.user, { 
-        displayName: name 
-      });
-      
-      console.log('Registration successful:', userCredential.user);
+      await updateProfile(userCredential.user, { displayName: name });
+      console.log('Registration successful');
       return true;
     } catch (error) {
       console.error('Error during registration:', error);
@@ -79,13 +111,12 @@ export class AuthService {
   // Sign in with email and password
   async signIn(email: string, password: string): Promise<boolean> {
     try {
-      console.log('Signing in user:', email);
-      const userCredential = await signInWithEmailAndPassword(
-        this.auth, 
-        email, 
+      const result = await signInWithEmailAndPassword(
+        this.firebase.auth,
+        email,
         password
       );
-      console.log('Sign in successful:', userCredential.user);
+      console.log('Sign in successful');
       return true;
     } catch (error) {
       console.error('Error during sign in:', error);
@@ -96,8 +127,11 @@ export class AuthService {
   // Sign out
   async signOut(): Promise<void> {
     try {
-      await signOut(this.auth);
-      console.log('User signed out');
+      await signOut(this.firebase.auth);
+      localStorage.removeItem('user_email');
+      localStorage.removeItem('user_displayName');
+      localStorage.removeItem('user_uid');
+      console.log('Sign out successful');
       this.router.navigate(['/login']);
     } catch (error) {
       console.error('Error during sign out:', error);

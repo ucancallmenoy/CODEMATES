@@ -4,11 +4,11 @@ import { PublicComponent } from './public/public.component';
 
 
 const routes: Routes = [
-  {
-    path: '',
-    redirectTo: 'login',
-    pathMatch: 'full'
-  },
+  // {
+  //   path: '',
+  //   redirectTo: 'login',
+  //   pathMatch: 'full'
+  // },
   {
     path: '',
     loadChildren: () => import('./public/public.module').then(m => m.PublicModule)
